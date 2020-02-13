@@ -1,0 +1,315 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: DataViews API
+  license:
+    name: Gnu GPL v3
+servers:
+  - url: http://globalfishingwatch.org
+paths:
+  /dataviews:
+    get:
+      summary: List dataviews
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Dataset ids that should be matched
+          schema:
+            type: array
+            items:
+              type: string
+        - name: filter
+          in: query
+          required: false
+          description: TBD Filter datasets ie show only public dataview 
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns an array of Dataviews
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataviews"
+    post:
+      summary: TBD Create a Dataview
+      responses:
+        '201':
+          description: Null response
+          
+  /dataview/{dataviewId}:
+    get:
+      summary: TBD get a specific Dataview by id
+      parameters:
+        - name: dataviewId
+          in: path
+          required: true
+          description: The id of the dataview to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns a Dataview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataview"
+  
+  /datasets:
+    get:
+      summary: List datasets
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          description: Dataset ids that should be matched
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Returns an array of Datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Datasets"
+    post:
+      summary: TBD Create a dataset
+      responses:
+        '201':
+          description: Null response
+          
+  /dataset/{datasetId}:
+    get:
+      summary: TBD get a specific Dataset by id
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          description: The id of the dataset to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+                
+  /workspace/{workspaceId}:
+    get:
+      summary: TBD get a specific workspace by id. We should favor storing the workspace in the app URL by default and use the API as an explicit share mechanism.
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: The id of the wworkspace to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Workspace"
+  
+  /workspaces:
+    post:
+      summary: TBD Create a worskpace
+      responses:
+        '201':
+          description: Null response
+          
+
+  
+components:
+  schemas:
+  
+    InfoField:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          description: Type of formatting that should be used
+        label:
+          type: string
+          description: Human-readable label
+      
+    
+    Endpoint:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: Needed for a Dataview to know hat endpoint it can consume
+          enum:
+            - tracks
+            - info
+            - tiles
+            - geojson
+            - report
+        urlTemplate:
+          type: string
+          description: A url where parameters can be set with a Mustache-style template, ie "//gfw.org/tiles/{{z}}/{{x}}/{{y}}.pbf" or "//gfw.org/tracks/{{objectId}}.geojson" 
+        fields:
+          type: array
+          description: TBD fields that can be read from that dataset /info endpoint, in order of desired appearance in the UI
+          items:
+            $ref: "#/components/schemas/InfoField"
+
+    Dataset:
+      type: object
+      required:
+        - id
+        - source
+        - version
+        - endpoints
+      properties:
+        id:
+          type: string
+          description: Uniquely identifes a data source and its version, ie "indonesia-vms-latest"
+        source:
+          type: string
+          description: Identifies the source of the dataset, ie "indonesia-vms" 
+        version:
+          type: string
+          description: Identifies some published version of a dataset, ie "latest"
+        endpoints:
+          type: array
+          description: Endpoints that can potentially be used with that Dataset, ie info, tracks, tiles, etc
+          items:
+            $ref: "#/components/schemas/Endpoint"
+        description:
+          type: string
+          description: Description
+        datePublished:
+          type: string
+          format: date-time
+          description: TBD When was this dataset version published
+        start:
+          type: string
+          format: date-time
+          description: TBD Time extent of the dataset - start
+        end:
+          type: string
+          format: date-time
+          description: TBD Time extent of the dataset - en
+        attribution:
+          type: string
+          format: string
+          description: TBD Attribution/copyright that should be displayed when using this dataset
+  
+    DatasetsIds:
+      type: array
+      items:
+        type: string
+  
+    Datasets:
+      type: array
+      items:
+        $ref: '#/components/schemas/Dataset'
+    
+    Dataview:
+      type: object
+      description: A Datavieew is the link between one or several Datasets and its/their visualisation stored as a series of parameters in config. A Dataview must have datasets or datasetsId. If datasets are not specified, datasetsIds MUST be specified in order for the client to resolve datasets.
+      required:
+        - id
+        - config
+        - datasetsIds
+      properties:
+        id:
+          type: string
+        config:
+          type: object
+          description: An object describing how the dataset should be displayed. In the case of a map layer, a GeneratorConfig object that can be consumed by LayerComposer (front-end stuff)
+        description:
+          type: string
+          description: Description
+        #datasets:
+        #  oneOf:
+        #    - $ref: '#/components/schemas/DatasetsIds'
+        #    - $ref: '#/components/schemas/Datasets'
+        datasets:
+          $ref: '#/components/schemas/Datasets'
+        datasetsIds:
+          $ref: '#/components/schemas/DatasetsIds'
+        datePublished:
+          type: string
+          format: date-time
+          description: TBD When was this dataset version published
+    
+    
+    Dataviews:
+      type: array
+      items:
+        $ref: '#/components/schemas/Dataview'
+
+
+    DataviewOverride:
+      type: object
+      description: TBD A dictionary of values that can be used to override generic parts of Dataviews, ie values to be used in URL templates, layer opacity, layer color, etc
+      additionalProperties: true
+
+    WorkspaceDataviewReference:
+      type: object
+      required:
+        - dataviewId
+      properties:
+        dataviewId:
+          type: string
+        overrides:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataviewOverride'
+        
+    
+    WorkspaceDataviewReferences:
+      type: array
+      items:
+        $ref: '#/components/schemas/WorkspaceDataviewReference'
+    
+    Workspace:
+      type: object
+      description: TBD A Workspace associates a collection of Dataviews, their overrides, as well as generic app state elements such as map viewport, timebar boundaries, etc. A workspace can be anonymously stored serialized in the URL or explicitely referencable and saved.
+      required:
+        - id
+        - dataviews
+      properties:
+        id:
+          type: string
+        dataviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkspaceDataviewReferences'
+        description:
+          type: string
+          description: Description
+        datePublished:
+          type: string
+          format: date-time
+          description: TBD When was this dataset version published
+        viewport:
+          type: array
+          description: z, lat, lon array representing the current map viewport 
+          items:
+            type: number
+        start:
+          type: string
+          format: date-time
+          description: time extent of the timebar - start
+        end:
+          type: string
+          format: date-time
+          description: time extent of the timebar - end
+        
+    
